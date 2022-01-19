@@ -3,6 +3,37 @@ let selectedPreset = undefined;
 let anyline;
 let mirrored = true;
 
+// Create a client instance
+var client = new Paho.MQTT.Client("broker.emqx.io", Number(8083), "clientId1");
+
+// set callback handlers
+client.onConnectionLost = onConnectionLost;
+client.onMessageArrived = onMessageArrived;
+
+// connect the client
+client.connect({onSuccess:onConnect});
+
+
+// called when the client connects
+function onConnect() {
+  // Once a connection has been made, make a subscription and send a message.
+  console.log("onConnect");
+}
+
+// called when the client loses its connection
+function onConnectionLost(responseObject) {
+  if (responseObject.errorCode !== 0) {
+    console.log("onConnectionLost:"+responseObject.errorMessage);
+  }
+}
+
+// called when a message arrives
+function onMessageArrived(message) {
+  console.log("onMessageArrived:"+message.payloadString);
+}
+
+
+
 async function mountAnylineJS(preset) {
   try {
     selectedPreset = preset;
@@ -35,6 +66,13 @@ async function mountAnylineJS(preset) {
 
     anyline.onResult = (result) => {
       console.log('Result: ', result);
+      var mrzResult = {};
+      mrzResult["mrz"] = result.result[14].text;
+      mrzResult["scanTime"] = result.scanTime;
+      message = new Paho.MQTT.Message(JSON.stringify(mrzResult));
+      message.destinationName = "DataCapture";
+      client.send(message);
+      
     };
 
     await appendCameraSwitcher(anyline);
