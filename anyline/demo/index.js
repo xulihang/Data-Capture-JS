@@ -67,7 +67,13 @@ async function mountAnylineJS(preset) {
     anyline.onResult = (result) => {
       console.log('Result: ', result);
       var mrzResult = {};
-      mrzResult["mrz"] = result.result[14].text;
+      for (var i=0;i<result.result.length;i++) {
+          r = result.result[i];
+          if (r.identifier == "mrzString"){
+              mrzResult["mrz"] = r.text;
+          }
+      }
+      
       mrzResult["scanTime"] = result.scanTime;
       message = new Paho.MQTT.Message(JSON.stringify(mrzResult));
       message.destinationName = "DataCapture";
